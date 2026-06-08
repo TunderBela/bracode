@@ -34,27 +34,27 @@
             margin-bottom: 10px;
             outline: none;
         }
+        /* JAVÍTÁS: Kétsoros, fix rácsszerkezet a gomboknak */
         .filter-buttons {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 egyenlő oszlop */
             gap: 6px;
-            overflow-x: auto;
             padding-bottom: 5px;
-            scrollbar-width: none;
-        }
-        .filter-buttons::-webkit-scrollbar {
-            display: none;
         }
         .btn {
-            flex: 0 0 auto;
-            padding: 10px 16px;
-            font-size: 14px;
+            width: 100%;
+            padding: 10px 4px; /* Kicsit keskenyebb belső párnázás, hogy a hosszú szavak is kiférjenek */
+            font-size: 13px; /* Minimálisan kisebb betű, hogy ne törjön meg csúnyán mobilalapú nézetben */
             font-weight: bold;
             border: none;
             border-radius: 6px;
             background-color: #e5e7eb;
             color: #374151;
             cursor: pointer;
+            text-align: center;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* Ha nagyon nem férne ki valami, finoman levágja */
         }
         .btn.active {
             background-color: #f11111;
@@ -150,7 +150,7 @@
             <button class="btn active" onclick="filterCategory('all', this)">All</button>
             <button class="btn" onclick="filterCategory('fruit', this)">Fruit</button>
             <button class="btn" onclick="filterCategory('veg', this)">Veg</button>
-            <button class="btn" onclick="filterCategory('meat', this)">Meat & Poultry</button>
+            <button class="btn" onclick="filterCategory('meat', this)">Meat & Poult.</button>
             <button class="btn" onclick="filterCategory('non-food', this)">Non-food</button>
             <button class="btn" onclick="filterCategory('ambient', this)">Ambient</button>
         </div>
@@ -161,8 +161,8 @@
 </div>
 
 <script>
-    // 👇 IDE MÁSOLD A SAJÁT LINKEDET
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/1g6jG9dZTZFhDfw1doteI7hyj2sjFBLUf7do48qvXccE/export?format=csv";
+    // 👇 IDE JÖN A SAJÁT GOOGLE SHEETS LINKED!
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTshMsz2X_A-UAtC35H0L9oB6pYvIepO0lqZ85Y_ZgC-R0_Z6LpG7n-oQ8V6bE09mCq9O7FvQp8VzHn/pub?output=csv";
 
     const fallbackData = `Loose Bananas,fruit,41012,1
 Gala Apples,fruit,42311,42
@@ -172,7 +172,6 @@ Vine Tomatoes,veg,31054,104`;
     let currentCategory = 'all';
 
     function parseCSV(text) {
-        // JAVÍTÁS: Regex alapú sortörés-kezelés (\r\n és \n egyaránt), ami kiküszöböli a Firefox hibáját
         const lines = text.split(/\r?\n/);
         if (lines.length === 0 || !lines[0].trim()) return [];
         
