@@ -34,19 +34,18 @@
             margin-bottom: 10px;
             outline: none;
         }
-        /* ÚJ: Oldalra görgethető gomsáv mobilra optimalizálva */
         .filter-buttons {
             display: flex;
             gap: 6px;
             overflow-x: auto;
             padding-bottom: 5px;
-            scrollbar-width: none; /* Firefox elrejtés */
+            scrollbar-width: none;
         }
         .filter-buttons::-webkit-scrollbar {
-            display: none; /* Chrome/Safari elrejtés */
+            display: none;
         }
         .btn {
-            flex: 0 0 auto; /* Megakadályozza a gombok összenyomódását */
+            flex: 0 0 auto;
             padding: 10px 16px;
             font-size: 14px;
             font-weight: bold;
@@ -55,7 +54,7 @@
             background-color: #e5e7eb;
             color: #374151;
             cursor: pointer;
-            white-space: nowrap; /* Nem töri meg a szöveget több sorba */
+            white-space: nowrap;
         }
         .btn.active {
             background-color: #f11111;
@@ -165,7 +164,6 @@
     // 👇 A Google Sheets linked (ezt hagyd meg a sajátodnak)
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTshMsz2X_A-UAtC35H0L9oB6pYvIepO0lqZ85Y_ZgC-R0_Z6LpG7n-oQ8V6bE09mCq9O7FvQp8VzHn/pub?output=csv";
 
-    // Alapértelmezett adatok frissítve az új kategóriák mintáival
     const fallbackData = `Loose Bananas,fruit,41012,1
 Gala Apples,fruit,42311,42
 Vine Tomatoes,veg,31054,104
@@ -187,12 +185,16 @@ Basmati Rice 1kg,ambient,54321,12`;
             if (name && category && code && plu) {
                 parsed.push({
                     name: name.trim(),
-                    category: category.trim().toLowerCase(), // Kisbetűssé alakítjuk a pontos egyezésért
+                    category: category.trim().toLowerCase(),
                     code: code.trim(),
                     plu: plu.trim().padStart(3, '0')
                 });
             }
         }
+
+        // ÚJ: Automatikus ábécésorrendbe rendezés (A-Z) a termék neve szerint
+        parsed.sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));
+
         return parsed;
     }
 
@@ -229,8 +231,6 @@ Basmati Rice 1kg,ambient,54321,12`;
             const matchesSearch = product.name.toLowerCase().includes(query) || 
                                   product.code.includes(query) || 
                                   product.plu.includes(query);
-            
-            // Intelligens kategóriaegyeztetés (kezeljük a gomb és a CSV közötti apró eltéréseket)
             const matchesCategory = (currentCategory === 'all' || product.category === currentCategory);
             return matchesSearch && matchesCategory;
         });
