@@ -34,17 +34,16 @@
             margin-bottom: 10px;
             outline: none;
         }
-        /* JAVÍTÁS: Kétsoros, fix rácsszerkezet a gomboknak */
         .filter-buttons {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3 egyenlő oszlop */
+            grid-template-columns: repeat(3, 1fr);
             gap: 6px;
             padding-bottom: 5px;
         }
         .btn {
             width: 100%;
-            padding: 10px 4px; /* Kicsit keskenyebb belső párnázás, hogy a hosszú szavak is kiférjenek */
-            font-size: 13px; /* Minimálisan kisebb betű, hogy ne törjön meg csúnyán mobilalapú nézetben */
+            padding: 10px 4px;
+            font-size: 13px;
             font-weight: bold;
             border: none;
             border-radius: 6px;
@@ -54,7 +53,7 @@
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis; /* Ha nagyon nem férne ki valami, finoman levágja */
+            text-overflow: ellipsis;
         }
         .btn.active {
             background-color: #f11111;
@@ -105,6 +104,8 @@
             width: fit-content;
             margin-top: 2px;
         }
+        
+        /* Normál kód konténer stílusa */
         .product-code-container {
             display: flex;
             flex-direction: column;
@@ -132,6 +133,19 @@
             letter-spacing: 0.5px;
             line-height: 1;
         }
+
+        /* ÚJ: Helyettesítő (piros) kód stílusa */
+        .product-code-container.substituted {
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+        }
+        .product-code-container.substituted .code-label {
+            color: #dc2626;
+        }
+        .product-code-container.substituted .product-code {
+            color: #dc2626;
+        }
+        
         .status-bar {
             text-align: center;
             font-size: 11px;
@@ -161,12 +175,12 @@
 </div>
 
 <script>
-    // 👇 IDE JÖN A SAJÁT GOOGLE SHEETS LINKED!
+    // 👇 IDE MÁSOLD A SAJÁT GOOGLE SHEETS LINKEDET!
     const CSV_URL = "https://docs.google.com/spreadsheets/d/1g6jG9dZTZFhDfw1doteI7hyj2sjFBLUf7do48qvXccE/export?format=csv";
 
     const fallbackData = `Loose Bananas,fruit,41012,1
 Gala Apples,fruit,42311,42
-Vine Tomatoes,veg,31054,104`;
+Sérült Dobozos Izzó,non-food,78910*,999`;
 
     let products = [];
     let currentCategory = 'all';
@@ -184,11 +198,21 @@ Vine Tomatoes,veg,31054,104`;
             
             const [name, category, code, plu] = currentLine.split(',');
             if (name && category && code && plu) {
+                let cleanCode = code.trim();
+                let isSubstituted = false;
+
+                // ÚJ: Ellenőrizzük, hogy van-e csillag a kód végén
+                if (cleanCode.endsWith('*')) {
+                    isSubstituted = true;
+                    cleanCode = cleanCode.replace('*', '').trim(); // Eltávolítjuk a csillagot a tiszta kereshetőségért
+                }
+
                 parsed.push({
                     name: name.trim(),
                     category: category.trim().toLowerCase(),
-                    code: code.trim(),
-                    plu: plu.trim().padStart(3, '0')
+                    code: cleanCode,
+                    plu: plu.trim().padStart(3, '0'),
+                    isSubstituted: isSubstituted // Eltároljuk a tényt a kártya színezéséhez
                 });
             }
         }
@@ -209,14 +233,19 @@ Vine Tomatoes,veg,31054,104`;
         filteredProducts.forEach(product => {
             const card = document.createElement('div');
             card.className = 'product-card';
+            
+            // ÚJ: Ha a termék helyettesítő kódos, extra CSS osztályt és más feliratot kap
+            const containerClass = product.isSubstituted ? 'product-code-container substituted' : 'product-code-container';
+            const labelText = product.isSubstituted ? 'SUB CODE' : 'CODE';
+
             card.innerHTML = `
                 <div class="product-info">
                     <span class="product-category">${product.category}</span>
                     <span class="product-name">${product.name}</span>
                     <span class="product-plu">PLU: ${product.plu}</span>
                 </div>
-                <div class="product-code-container">
-                    <span class="code-label">Code</span>
+                <div class="${containerClass}">
+                    <span class="code-label">${labelText}</span>
                     <span class="product-code">${product.code}</span>
                 </div>
             `;
