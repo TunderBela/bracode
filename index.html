@@ -104,8 +104,6 @@
             width: fit-content;
             margin-top: 2px;
         }
-        
-        /* Normál kód konténer stílusa */
         .product-code-container {
             display: flex;
             flex-direction: column;
@@ -133,8 +131,6 @@
             letter-spacing: 0.5px;
             line-height: 1;
         }
-
-        /* ÚJ: Helyettesítő (piros) kód stílusa */
         .product-code-container.substituted {
             background-color: #fef2f2;
             border: 1px solid #fca5a5;
@@ -198,21 +194,25 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
             
             const [name, category, code, plu] = currentLine.split(',');
             if (name && category && code && plu) {
+                // JAVÍTÁS: Először teljesen letisztítjuk az adatokat a rejtett karakterektől
                 let cleanCode = code.trim();
+                let cleanPlu = plu.trim();
                 let isSubstituted = false;
 
-                // ÚJ: Ellenőrizzük, hogy van-e csillag a kód végén
-                if (cleanCode.endsWith('*')) {
+                // JAVÍTÁS: Ellenőrizzük, hogy a KÓDBAN vagy a PLU-BAN van-e csillag (bárhol a szövegben)
+                if (cleanCode.includes('*') || cleanPlu.includes('*')) {
                     isSubstituted = true;
-                    cleanCode = cleanCode.replace('*', '').trim(); // Eltávolítjuk a csillagot a tiszta kereshetőségért
+                    // Kitöröljük a csillagokat, hogy a tiszta számok maradjanak meg keresésre
+                    cleanCode = cleanCode.replace(/\*/g, '').trim();
+                    cleanPlu = cleanPlu.replace(/\*/g, '').trim();
                 }
 
                 parsed.push({
                     name: name.trim(),
                     category: category.trim().toLowerCase(),
                     code: cleanCode,
-                    plu: plu.trim().padStart(3, '0'),
-                    isSubstituted: isSubstituted // Eltároljuk a tényt a kártya színezéséhez
+                    plu: cleanPlu.padStart(3, '0'),
+                    isSubstituted: isSubstituted
                 });
             }
         }
@@ -234,7 +234,6 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
             const card = document.createElement('div');
             card.className = 'product-card';
             
-            // ÚJ: Ha a termék helyettesítő kódos, extra CSS osztályt és más feliratot kap
             const containerClass = product.isSubstituted ? 'product-code-container substituted' : 'product-code-container';
             const labelText = product.isSubstituted ? 'SUB CODE' : 'CODE';
 
