@@ -39,14 +39,12 @@
             border-radius: 8px;
             outline: none;
         }
-        
-        /* ÚJ: Halványzöld, minimál "R" frissítő gomb stílusa */
         .refresh-btn {
             width: 52px;
             height: 52px;
-            border: none; /* Keret törölve */
-            background-color: #d1fae5; /* Halványzöld háttér (Tailwind emerald-100) */
-            color: #065f46; /* Sötétzöld karakter a jó kontrasztért */
+            border: none;
+            background-color: #d1fae5;
+            color: #065f46;
             border-radius: 50%;
             font-size: 20px;
             font-weight: 800;
@@ -59,13 +57,12 @@
             -webkit-tap-highlight-color: transparent;
         }
         .refresh-btn:active {
-            background-color: #a7f3d0; /* Kicsit sötétebb zöld nyomásra */
+            background-color: #a7f3d0;
             transform: scale(0.92);
         }
         .refresh-btn.spinning {
             transform: rotate(360deg);
         }
-
         .filter-buttons {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -173,7 +170,6 @@
         .product-code-container.substituted .product-code {
             color: #dc2626;
         }
-        
         .status-bar {
             text-align: center;
             font-size: 11px;
@@ -207,7 +203,7 @@
 
 <script>
     // 👇 IDE MÁSOLD A SAJÁT GOOGLE SHEETS LINKEDET!
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/1g6jG9dZTZFhDfw1doteI7hyj2sjFBLUf7do48qvXccE/export?format=csv";
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTshMsz2X_A-UAtC35H0L9oB6pYvIepO0lqZ85Y_ZgC-R0_Z6LpG7n-oQ8V6bE09mCq9O7FvQp8VzHn/pub?output=csv";
 
     const fallbackData = `Loose Bananas,fruit,41012,1
 Gala Apples,fruit,42311,42
@@ -284,7 +280,6 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
         });
     }
 
-    // JAVÍTVA: A keresési logika visszaállítva a stabil, tiszta verzióra
     function filterData() {
         const query = document.getElementById('searchInput').value.toLowerCase();
         const filtered = products.filter(product => {
@@ -311,7 +306,17 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
         btn.classList.add('spinning');
         status.innerText = "Fetching latest database...";
 
-        fetch(CSV_URL)
+        const cacheBuster = `&_cb=${new Date().getTime()}`;
+        const finalUrl = CSV_URL + cacheBuster;
+
+        fetch(finalUrl, {
+            method: 'GET',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        })
             .then(response => {
                 if (!response.ok) throw new Error('Network error');
                 return response.text();
@@ -346,7 +351,14 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
         }
         displayProducts(products);
 
-        fetch(CSV_URL)
+        const cacheBuster = `&_cb=${new Date().getTime()}`;
+        
+        fetch(CSV_URL + cacheBuster, {
+            method: 'GET',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate'
+            }
+        })
             .then(response => {
                 if (!response.ok) throw new Error('Network error');
                 return response.text();
