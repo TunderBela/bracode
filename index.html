@@ -52,16 +52,13 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.3s ease, background-color 0.2s;
+            transition: transform 0.2s, background-color 0.2s;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
         .refresh-btn:active {
             background-color: #a7f3d0;
             transform: scale(0.92);
-        }
-        .refresh-btn.spinning {
-            transform: rotate(360deg);
         }
         .filter-buttons {
             display: grid;
@@ -184,7 +181,7 @@
     <div class="header-sticky">
         <div class="search-container">
             <input type="text" id="searchInput" class="search-box" placeholder="Search product, code or PLU..." autocomplete="off">
-            <button id="refreshBtn" class="refresh-btn" onclick="forceRefreshDatabase()">R</button>
+            <button id="refreshBtn" class="refresh-btn" onclick="forceRefreshPage()">R</button>
         </div>
         
         <div class="filter-buttons">
@@ -203,7 +200,7 @@
 
 <script>
     // 👇 IDE MÁSOLD A SAJÁT GOOGLE SHEETS LINKEDET!
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/1g6jG9dZTZFhDfw1doteI7hyj2sjFBLUf7do48qvXccE/export?format=csv";
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTshMsz2X_A-UAtC35H0L9oB6pYvIepO0lqZ85Y_ZgC-R0_Z6LpG7n-oQ8V6bE09mCq9O7FvQp8VzHn/pub?output=csv";
 
     const fallbackData = `Loose Bananas,fruit,41012,1
 Gala Apples,fruit,42311,42
@@ -299,39 +296,13 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
         filterData();
     }
 
-    // ÚJ MEGKÖZELÍTÉS: A link tiszta marad, a böngészőt a cache: "reload" opcióval kényszerítjük frissítésre
-    function forceRefreshDatabase() {
-        const btn = document.getElementById('refreshBtn');
-        const status = document.getElementById('statusBar');
+    // ÚJ: Egyszerű, kőkemény és bombabiztos teljes ablakos oldalújratöltés
+    function forceRefreshPage() {
+        // Töröljük a cache-t a helyi tárolóból, hogy az indításkor biztosan az újat kérje le
+        localStorage.removeItem('lidl_plu_cache');
         
-        btn.classList.add('spinning');
-        status.innerText = "Fetching latest database...";
-
-        fetch(CSV_URL, { 
-            method: 'GET',
-            cache: 'reload' // 👈 Ez kényszeríti a böngészőt, hogy hagyja figyelmen kívül a cache-t és töltsön le mindent újra
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Network error');
-                return response.text();
-            })
-            .then(freshData => {
-                if (freshData && freshData.includes(',')) {
-                    localStorage.setItem('lidl_plu_cache', freshData);
-                    products = parseCSV(freshData);
-                    filterData();
-                    status.innerText = "Database successfully updated!";
-                }
-            })
-            .catch(err => {
-                status.innerText = "Update failed. Device is offline.";
-                console.log(err);
-            })
-            .finally(() => {
-                setTimeout(() => {
-                    btn.classList.remove('spinning');
-                }, 500);
-            });
+        // Újratölti az aktuális oldalt ugyanabban az ablakban, kényszerítve a hálózatot
+        window.location.reload();
     }
 
     function initApp() {
@@ -345,8 +316,8 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
         }
         displayProducts(products);
 
-        // Az automatikus háttértöltés is megkapja a tiszta, hálózati kérést
-        fetch(CSV_URL, { cache: 'no-store' })
+        // Mindig megpróbálja letölteni a legfrissebbet a megnyitáskor
+        fetch(CSV_URL, { cache: 'reload' })
             .then(response => {
                 if (!response.ok) throw new Error('Network error');
                 return response.text();
