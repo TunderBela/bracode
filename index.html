@@ -171,7 +171,7 @@
 </div>
 
 <script>
-    // 👇 IDE MÁSOLD A SAJÁT GOOGLE SHEETS LINKEDET!
+    // 👇 COPY YOUR GOOGLE SHEETS LINK!
     const CSV_URL = "https://docs.google.com/spreadsheets/d/1g6jG9dZTZFhDfw1doteI7hyj2sjFBLUf7do48qvXccE/export?format=csv";
 
     const fallbackData = `Loose Bananas,fruit,41012,1
@@ -194,15 +194,14 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
             
             const [name, category, code, plu] = currentLine.split(',');
             if (name && category && code && plu) {
-                // JAVÍTÁS: Először teljesen letisztítjuk az adatokat a rejtett karakterektől
+
                 let cleanCode = code.trim();
                 let cleanPlu = plu.trim();
                 let isSubstituted = false;
 
-                // JAVÍTÁS: Ellenőrizzük, hogy a KÓDBAN vagy a PLU-BAN van-e csillag (bárhol a szövegben)
                 if (cleanCode.includes('*') || cleanPlu.includes('*')) {
                     isSubstituted = true;
-                    // Kitöröljük a csillagokat, hogy a tiszta számok maradjanak meg keresésre
+
                     cleanCode = cleanCode.replace(/\*/g, '').trim();
                     cleanPlu = cleanPlu.replace(/\*/g, '').trim();
                 }
