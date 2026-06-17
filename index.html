@@ -25,15 +25,44 @@
             padding-bottom: 10px;
             z-index: 100;
         }
+        
+        /* ÚJ: Relatív konténer a keresősávnak és az X gombnak */
+        .search-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 10px;
+        }
         .search-box {
             width: 100%;
             padding: 15px;
+            padding-right: 45px; /* ÚJ: Helyet hagyunk a jobb oldalon az X gombnak */
             font-size: 18px;
             border: 2px solid #0050aa;
             border-radius: 8px;
             outline: none;
-            margin-bottom: 10px;
         }
+        
+        /* ÚJ: A beviteli mezőbe simuló törlés (X) gomb stílusa */
+        .clear-btn {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            color: #9ca3af;
+            cursor: pointer;
+            display: none; /* Alapértelmezetten rejtve van, amíg üres a mező */
+            padding: 5px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .clear-btn:active {
+            color: #4b5563;
+        }
+
         .filter-buttons {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -153,7 +182,10 @@
 
 <div class="container">
     <div class="header-sticky">
-        <input type="text" id="searchInput" class="search-box" placeholder="Search product, code or PLU..." autocomplete="off">
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search product, code or PLU..." autocomplete="off">
+            <button id="clearBtn" class="clear-btn" onclick="clearSearch()">×</button>
+        </div>
         
         <div class="filter-buttons">
             <button class="btn active" onclick="filterCategory('all', this)">All</button>
@@ -170,10 +202,8 @@
 </div>
 
 <script>
-    // A megadott új Google Sheets CSV export linkje
     const CSV_URL = "https://docs.google.com/spreadsheets/d/1g6jG9dZTZFhDfw1doteI7hyj2sjFBLUf7do48qvXccE/export?format=csv";
 
-    // Alapértelmezett adatok, ha nincs net és nincs korábbi mentés sem
     const fallbackData = `Loose Bananas,fruit,41012,1
 Gala Apples,fruit,42311,42
 Sérült Dobozos Izzó,non-food,78910*,999`;
@@ -249,8 +279,19 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
         });
     }
 
+    // ÚJ: A keresési logika kiegészült az X gomb mutatási/elrejtési funkciójával
     function filterData() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
+        const input = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const query = input.value.toLowerCase();
+        
+        // Ha van beírt szöveg, megjelenítjük az X gombot, különben elrejtjük
+        if (query.length > 0) {
+            clearBtn.style.display = 'block';
+        } else {
+            clearBtn.style.display = 'none';
+        }
+
         const filtered = products.filter(product => {
             const matchesSearch = product.name.toLowerCase().includes(query) || 
                                   product.code.includes(query) || 
@@ -261,6 +302,14 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
         displayProducts(filtered);
     }
 
+    // ÚJ: Ez a funkció fut le, ha a felhasználó rákattint az X gombra
+    function clearSearch() {
+        const input = document.getElementById('searchInput');
+        input.value = ''; // Szöveg kiürítése
+        filterData();     // Lista visszaállítása alaphelyzetbe és az X elrejtése
+        input.focus();    // Visszatesszük a kurzort a mezőbe, hogy azonnal lehessen gépelni az újat
+    }
+
     function filterCategory(category, buttonElement) {
         currentCategory = category;
         document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
@@ -269,7 +318,6 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
     }
 
     function initApp() {
-        // 1. Azonnal betöltjük az utoljára sikeresen elmentett gyorsítótárat (vagy az alap adatokat)
         const cachedData = localStorage.getItem('lidl_plu_cache');
         if (cachedData) {
             products = parseCSV(cachedData);
@@ -280,7 +328,6 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
         }
         displayProducts(products);
 
-        // 2. Minden megnyitáskor/frissítéskor a háttérben lekérjük az élő Google Sheets-et
         fetch(CSV_URL)
             .then(response => {
                 if (!response.ok) throw new Error('Network error');
