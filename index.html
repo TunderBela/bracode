@@ -25,40 +25,14 @@
             padding-bottom: 10px;
             z-index: 100;
         }
-        .search-container {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 10px;
-        }
         .search-box {
-            flex: 1;
+            width: 100%;
             padding: 15px;
             font-size: 18px;
             border: 2px solid #0050aa;
             border-radius: 8px;
             outline: none;
-        }
-        .refresh-btn {
-            width: 52px;
-            height: 52px;
-            border: none;
-            background-color: #d1fae5;
-            color: #065f46;
-            border-radius: 50%;
-            font-size: 20px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .refresh-btn:active {
-            background-color: #a7f3d0;
-            transform: scale(0.92);
+            margin-bottom: 10px;
         }
         .filter-buttons {
             display: grid;
@@ -179,10 +153,7 @@
 
 <div class="container">
     <div class="header-sticky">
-        <div class="search-container">
-            <input type="text" id="searchInput" class="search-box" placeholder="Search product, code or PLU..." autocomplete="off">
-            <button id="refreshBtn" class="refresh-btn" onclick="forceRefreshPage()">R</button>
-        </div>
+        <input type="text" id="searchInput" class="search-box" placeholder="Search product, code or PLU..." autocomplete="off">
         
         <div class="filter-buttons">
             <button class="btn active" onclick="filterCategory('all', this)">All</button>
@@ -199,10 +170,13 @@
 </div>
 
 <script>
-    // 👇 IDE MÁSOLD A SAJÁT GOOGLE SHEETS LINKEDET!
+    // A megadott új Google Sheets CSV export linkje
     const CSV_URL = "https://docs.google.com/spreadsheets/d/1g6jG9dZTZFhDfw1doteI7hyj2sjFBLUf7do48qvXccE/export?format=csv";
 
-    const fallbackData = `You are offline!,WARNING,00000,0`;
+    // Alapértelmezett adatok, ha nincs net és nincs korábbi mentés sem
+    const fallbackData = `Loose Bananas,fruit,41012,1
+Gala Apples,fruit,42311,42
+Sérült Dobozos Izzó,non-food,78910*,999`;
 
     let products = [];
     let currentCategory = 'all';
@@ -294,28 +268,20 @@
         filterData();
     }
 
-    // ÚJ: Egyszerű, kőkemény és bombabiztos teljes ablakos oldalújratöltés
-    function forceRefreshPage() {
-        // Töröljük a cache-t a helyi tárolóból, hogy az indításkor biztosan az újat kérje le
-        localStorage.removeItem('lidl_plu_cache');
-        
-        // Újratölti az aktuális oldalt ugyanabban az ablakban, kényszerítve a hálózatot
-        window.location.reload();
-    }
-
     function initApp() {
+        // 1. Azonnal betöltjük az utoljára sikeresen elmentett gyorsítótárat (vagy az alap adatokat)
         const cachedData = localStorage.getItem('lidl_plu_cache');
         if (cachedData) {
             products = parseCSV(cachedData);
-            document.getElementById('statusBar').innerText = "Running offline (cached data)";
+            document.getElementById('statusBar').innerText = "Database loaded from cache.";
         } else {
             products = parseCSV(fallbackData);
-            document.getElementById('statusBar').innerText = "Running offline (default data)";
+            document.getElementById('statusBar').innerText = "Running on default data.";
         }
         displayProducts(products);
 
-        // Mindig megpróbálja letölteni a legfrissebbet a megnyitáskor
-        fetch(CSV_URL, { cache: 'reload' })
+        // 2. Minden megnyitáskor/frissítéskor a háttérben lekérjük az élő Google Sheets-et
+        fetch(CSV_URL)
             .then(response => {
                 if (!response.ok) throw new Error('Network error');
                 return response.text();
@@ -325,11 +291,11 @@
                     localStorage.setItem('lidl_plu_cache', freshData);
                     products = parseCSV(freshData);
                     filterData();
-                    document.getElementById('statusBar').innerText = "Database loaded from Sheets.";
+                    document.getElementById('statusBar').innerText = "Database successfully synced with Sheets.";
                 }
             })
             .catch(err => {
-                console.log("Using cache.");
+                console.log("Device offline or Google Sheets unreachable. Using cached database.");
             });
     }
 
