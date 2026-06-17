@@ -25,15 +25,24 @@
             padding-bottom: 10px;
             z-index: 100;
         }
+        
+        /* ÚJ: A keresősáv és a gomb egy sorba rendezése */
+        .search-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
         .search-box {
-            width: 100%;
+            flex: 1;
             padding: 15px;
             font-size: 18px;
             border: 2px solid #0050aa;
             border-radius: 8px;
-            margin-bottom: 10px;
             outline: none;
         }
+        
+        /* ÚJ: Minimál kör alakú frissítő gomb stílusa */
         .refresh-btn {
             width: 52px;
             height: 52px;
@@ -54,10 +63,11 @@
             background-color: #eff6ff;
             transform: scale(0.92);
         }
-      
+        /* Pörgő animáció frissítés közben */
         .refresh-btn.spinning {
             transform: rotate(360deg);
         }
+
         .filter-buttons {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -178,7 +188,10 @@
 
 <div class="container">
     <div class="header-sticky">
-        <input type="text" id="searchInput" class="search-box" placeholder="Search product, code or PLU..." autocomplete="off">
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search product, code or PLU..." autocomplete="off">
+            <button id="refreshBtn" class="refresh-btn" onclick="forceRefreshDatabase()">↻</button>
+        </div>
         
         <div class="filter-buttons">
             <button class="btn active" onclick="filterCategory('all', this)">All</button>
@@ -195,12 +208,10 @@
 </div>
 
 <script>
-    // 👇 COPY YOUR GOOGLE SHEETS LINK!
+    // 👇 IDE MÁSOLD A SAJÁT GOOGLE SHEETS LINKEDET!
     const CSV_URL = "https://docs.google.com/spreadsheets/d/1g6jG9dZTZFhDfw1doteI7hyj2sjFBLUf7do48qvXccE/export?format=csv";
 
-    const fallbackData = `Loose Bananas,fruit,41012,1
-Gala Apples,fruit,42311,42
-Sérült Dobozos Izzó,non-food,78910*,999`;
+    const fallbackData = `You are offline!,WARNING,0,0`;
 
     let products = [];
     let currentCategory = 'all';
@@ -218,14 +229,12 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
             
             const [name, category, code, plu] = currentLine.split(',');
             if (name && category && code && plu) {
-
                 let cleanCode = code.trim();
                 let cleanPlu = plu.trim();
                 let isSubstituted = false;
 
                 if (cleanCode.includes('*') || cleanPlu.includes('*')) {
                     isSubstituted = true;
-
                     cleanCode = cleanCode.replace(/\*/g, '').trim();
                     cleanPlu = cleanPlu.replace(/\*/g, '').trim();
                 }
@@ -294,16 +303,13 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
         filterData();
     }
 
-    function initApp() {
-        const cachedData = localStorage.getItem('lidl_plu_cache');
-        if (cachedData) {
-            products = parseCSV(cachedData);
-            document.getElementById('statusBar').innerText = "Running offline (cached data)";
-        } else {
-            products = parseCSV(fallbackData);
-            document.getElementById('statusBar').innerText = "Running offline (default data)";
-        }
-        displayProducts(products);
+    // ÚJ: Külön funkció a gombbal indított kényszerített frissítésre
+    function forceRefreshDatabase() {
+        const btn = document.getElementById('refreshBtn');
+        const status = document.getElementById('statusBar');
+        
+        btn.classList.add('spinning');
+        status.innerText = "Fetching latest database...";
 
         fetch(CSV_URL)
             .then(response => {
@@ -315,7 +321,44 @@ Sérült Dobozos Izzó,non-food,78910*,999`;
                     localStorage.setItem('lidl_plu_cache', freshData);
                     products = parseCSV(freshData);
                     filterData();
-                    document.getElementById('statusBar').innerText = "Database updated from Google Sheets!";
+                    status.innerText = "Database successfully updated!";
+                }
+            })
+            .catch(err => {
+                status.innerText = "Update failed. Device is offline.";
+                console.log(err);
+            })
+            .finally(() => {
+                // Fél másodperc után levesszük az animációt, hogy szép legyen az átmenet
+                setTimeout(() => {
+                    btn.classList.remove('spinning');
+                }, 500);
+            });
+    }
+
+    function initApp() {
+        const cachedData = localStorage.getItem('lidl_plu_cache');
+        if (cachedData) {
+            products = parseCSV(cachedData);
+            document.getElementById('statusBar').innerText = "Running offline (cached data)";
+        } else {
+            products = parseCSV(fallbackData);
+            document.getElementById('statusBar').innerText = "Running offline (default data)";
+        }
+        displayProducts(products);
+
+        // Automatikus háttérfrissítés induláskor
+        fetch(CSV_URL)
+            .then(response => {
+                if (!response.ok) throw new Error('Network error');
+                return response.text();
+            })
+            .then(freshData => {
+                if (freshData && freshData.includes(',')) {
+                    localStorage.setItem('lidl_plu_cache', freshData);
+                    products = parseCSV(freshData);
+                    filterData();
+                    document.getElementById('statusBar').innerText = "Database loaded from Sheets.";
                 }
             })
             .catch(err => {
